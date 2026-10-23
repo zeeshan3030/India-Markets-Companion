@@ -132,32 +132,80 @@ const summary=document.createElement('b');summary.textContent='Total purchase co
 $('symbol').value='';$('quantity').value='';$('buyPrice').value='';
 };
 </script
-  
-<section style="padding:15px;border:1px solid gray;border-radius:10px;margin:15px">
-  <h2>Historical Market Data Test</h2>
-  <button onclick="testMarketData()">Test NSE Data</button>
-  <p id="marketStatus">Not tested yet.</p>
+<section class="card" style="padding:15px;margin:15px 0">
+  <h2>Historical Market Data</h2>
+  <p class="muted">Free NSE end-of-day data. Not live prices.</p>
+  <button id="refreshMarket" type="button">Refresh historical prices</button>
+  <p id="marketStatus" class="muted">Not refreshed yet.</p>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Symbol</th><th>Closing price (₹)</th><th>Date</th></tr></thead>
+      <tbody id="marketRows">
+        <tr><td colspan="3">Tap refresh to load data.</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <script>
-async function testMarketData() {
+async function refreshHistoricalPrices() {
   const status = document.getElementById('marketStatus');
+  const rows = document.getElementById('marketRows');
+  const button = document.getElementById('refreshMarket');
+  const symbols = ['RELIANCE','TCS','INFY','HDFCBANK','ICICIBANK','SBIN','ITC','LT'];
+
+  button.disabled = true;
   status.textContent = 'Loading...';
+  rows.replaceChildren();
+  let successful = 0;
 
-  try {
-    const response = await fetch(
-      'https://api.tejhq.dev/v1/ohlcv/nse/RELIANCE?from=2025-01-01&to=2025-01-10'
-    );
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const result = await response.json();
-    status.textContent = result.data && result.data.length
-      ? 'Success! Received ' + result.data.length + ' historical records.'
-      : 'Connected, but no records were returned.';
-  } catch (error) {
-    status.textContent = 'Could not connect: ' + error.message;
+  for (const symbol of symbols) {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td');
+    const price = document.createElement('td');
+    const date = document.createElement('td');
+    name.textContent = symbol;
+    price.textContent = 'Loading...';
+    date.textContent = '—';
+    tr.append(name, price, date);
+    rows.appendChild(tr);
+
+    try {
+      const url = 'https://api.tejhq.dev/v1/ohlcv/nse/' +
+        symbol + '?from=2026-01-01&to=2026-10-23';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const result = await response.json();
+      const data = Array.isArray(result.data) ? result.data : [];
+
+      if (!data.length) {
+        price.textContent = 'No data';
+        continue;
+      }
+
+      data.sort((a,b) => String(a.date).localeCompare(String(b.date)));
+      const latest = data[data.length - 1];
+      if (latest.close == null || !Number.isFinite(Number(latest.close))) {
+        price.textContent = 'Unavailable';
+        continue;
+      }
+
+      price.textContent = '₹' + Number(latest.close).toLocaleString('en-IN', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
+      date.textContent = latest.date || '—';
+      successful++;
+    } catch (error) {
+      price.textContent = 'Unavailable';
+      date.textContent = 'Connection issue';
+    }
   }
-}
-</script>
 
-</body>
-</html>
+  status.textContent = 'Loaded ' + successful + ' of ' + symbols.length +
+    ' stocks. Historical closing prices only, not live.';
+  button.disabled = false;
+}
+
+document.getElementById('refreshMarket')
+  .addEventListener('click', refreshHistoricalPrices);
+</script>
