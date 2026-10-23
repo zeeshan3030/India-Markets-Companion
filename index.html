@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1020">
+<title>India Markets Companion</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f1f5f9;font-family:Arial,sans-serif}
+header{padding:22px;background:#111a2e;border-bottom:1px solid #29364e}
+header h1{margin:0;font-size:23px}header span{color:#7c9cff}
+header p{color:#a5b4cc;font-size:13px}
+main{max-width:850px;margin:auto;padding:18px}
+.notice,.card{padding:16px;border:1px solid #29364e;border-radius:14px;background:#141c30;margin-bottom:14px}
+.notice{color:#f5d98b;background:#292315;font-size:13px;line-height:1.5}
+nav{display:flex;gap:8px;overflow:auto;margin:18px 0}
+button{padding:11px 14px;background:#202d48;color:white;border:1px solid #384968;border-radius:9px;cursor:pointer}
+button.active{background:#354c7b}
+h2{font-size:19px;margin-top:24px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.muted{color:#a5b4cc;font-size:13px}
+.value{font-size:24px;font-weight:bold;margin:10px 0}
+input{width:100%;padding:12px;border-radius:9px;border:1px solid #384968;background:#0b1020;color:white;margin:6px 0 14px}
+.panel{display:none}.panel.active{display:block}
+.tool{width:100%;text-align:left;margin:4px 0}
+label{display:block;margin-top:12px}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px 5px;border-bottom:1px solid #29364e}
+footer{text-align:center;color:#a5b4cc;padding:25px;font-size:12px}
+@media(min-width:600px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header>
+<h1>INDIA <span>MARKETS</span></h1>
+<p>Your personal Indian stock market workspace</p>
+</header>
+<main>
+<div class="notice"><b>Demo mode:</b> Live market data is not connected. No live prices or trading signals are being shown.</div>
+<nav>
+<button class="active" data-tab="dashboard">Dashboard</button>
+<button data-tab="watchlist">Watchlist</button>
+<button data-tab="risk">Risk calculator</button>
+<button data-tab="portfolio">Portfolio</button>
+</nav>
+<section id="dashboard" class="panel active">
+<h2>Market overview</h2>
+<div class="grid">
+<div class="card"><div class="muted">NIFTY 50</div><div class="value">—</div><div class="muted">Awaiting data</div></div>
+<div class="card"><div class="muted">SENSEX</div><div class="value">—</div><div class="muted">Awaiting data</div></div>
+<div class="card"><div class="muted">BANK NIFTY</div><div class="value">—</div><div class="muted">Awaiting data</div></div>
+<div class="card"><div class="muted">Connection</div><div class="value">Offline</div><div class="muted">Data not connected</div></div>
+</div>
+<h2>Trading sections</h2>
+<div class="grid">
+<button class="tool" data-go="watchlist">Stock watchlist</button>
+<button class="tool" data-go="risk">Intraday risk planner</button>
+<button class="tool" data-go="risk">Futures & options planning</button>
+<button class="tool" data-go="portfolio">Delivery & long-term investing</button>
+</div>
+</section>
+<section id="watchlist" class="panel">
+<h2>Stock watchlist</h2>
+<p class="muted">Search or add symbols. Prices remain blank until market data is connected.</p>
+<input id="search" placeholder="Search or enter a symbol, e.g. RELIANCE">
+<button id="add">Add symbol</button>
+<table><thead><tr><th>Symbol</th><th>Price</th><th>Status</th></tr></thead><tbody id="stocks"></tbody></table>
+</section>
+<section id="risk" class="panel">
+<h2>Position size calculator</h2>
+<p class="muted">Planning tool only; not a trade recommendation.</p>
+<label>Trading capital (₹)<input id="capital" type="number" value="10000" min="1"></label>
+<label>Risk per trade (%)<input id="riskPercent" type="number" value="1" min="0.1" max="100" step="0.1"></label>
+<label>Entry price (₹)<input id="entry" type="number" placeholder="Example: 250" min="0.01"></label>
+<label>Stop-loss price (₹)<input id="stop" type="number" placeholder="Example: 245" min="0.01"></label>
+<button id="calculate">Calculate</button>
+<div class="card" id="result" aria-live="polite">Enter your values to calculate.</div>
+</section>
+<section id="portfolio" class="panel">
+<h2>Portfolio tracker</h2>
+<p class="muted">Add your holdings to estimate purchase cost. No broker is connected.</p>
+<label>Symbol<input id="symbol" placeholder="Example: INFY"></label>
+<label>Quantity<input id="quantity" type="number" min="1" placeholder="Number of shares"></label>
+<label>Average purchase price (₹)<input id="buyPrice" type="number" min="0.01" placeholder="Purchase price"></label>
+<button id="addHolding">Add holding</button>
+<div id="holdings" class="card">No holdings added.</div>
+</section>
+</main>
+<footer>India Markets Companion · Educational use only, not financial advice.</footer>
+<script>
+const $=id=>document.getElementById(id);
+function openTab(id){
+document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));
+document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>openTab(b.dataset.go));
+let symbols=['RELIANCE','TCS','INFY','HDFCBANK','ICICIBANK','SBIN','ITC','LT'];
+function renderStocks(){
+const q=$('search').value.trim().toUpperCase();
+$('stocks').replaceChildren();
+symbols.filter(s=>s.includes(q)).forEach(s=>{
+const tr=document.createElement('tr');
+[s,'—','Not connected'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});
+$('stocks').appendChild(tr);
+});
+}
+$('search').oninput=renderStocks;
+$('add').onclick=()=>{
+const s=$('search').value.trim().toUpperCase();
+if(!/^[A-Z0-9&.-]{1,20}$/.test(s)){alert('Enter a valid stock symbol');return}
+if(!symbols.includes(s))symbols.unshift(s);
+$('search').value='';renderStocks();
+};
+renderStocks();
+$('calculate').onclick=()=>{
+const c=+$('capital').value,r=+$('riskPercent').value,e=+$('entry').value,s=+$('stop').value;
+if(c<=0||r<=0||r>100||e<=0||s<=0||e===s){$('result').textContent='Enter valid values. Entry and stop-loss must differ.';return}
+const budget=c*r/100,perShare=Math.abs(e-s),qty=Math.floor(Math.min(budget/perShare,c/e));
+$('result').textContent='Risk budget: ₹'+budget.toFixed(2)+'. Risk per share: ₹'+perShare.toFixed(2)+'. Illustrative quantity: '+qty+' shares. Estimated position cost: ₹'+(qty*e).toFixed(2)+'. Fees, slippage and price gaps are excluded; actual losses can exceed planned risk.';
+};
+let holdings=[];
+$('addHolding').onclick=()=>{
+const s=$('symbol').value.trim().toUpperCase(),q=+$('quantity').value,p=+$('buyPrice').value;
+if(!/^[A-Z0-9&.-]{1,20}$/.test(s)||!Number.isInteger(q)||q<=0||p<=0){alert('Enter a valid symbol, quantity and price');return}
+holdings.push({s,q,p});
+$('holdings').replaceChildren();
+let total=0;
+holdings.forEach(h=>{total+=h.q*h.p;const row=document.createElement('p');row.textContent=h.s+' · '+h.q+' shares · Cost ₹'+(h.q*h.p).toFixed(2);$('holdings').appendChild(row)});
+const summary=document.createElement('b');summary.textContent='Total purchase cost: ₹'+total.toFixed(2);$('holdings').appendChild(summary);
+$('symbol').value='';$('quantity').value='';$('buyPrice').value='';
+};
+</script>
+</body>
+</html>
